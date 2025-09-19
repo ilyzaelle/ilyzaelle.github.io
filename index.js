@@ -1,16 +1,11 @@
 document.addEventListener("DOMContentLoaded", function(){
-    var lat,lon,alt,vit;
     navigator.geolocation.getCurrentPosition(function(pos){
         var coords = pos.coords;
-        lat = coords.latitude;
-        lon = coords.longitude;
-        alt = coords.altitude;
-        vit = coords.speed;
-        
-        document.getElementById("lat").innerText = lat;
-        document.getElementById("lon").innerText = lon;
-        document.getElementById("alt").innerText = alt;
-        document.getElementById("vit").innerText = vit;
-        console.log(lat,lon,alt,vit);
+
+        coords.latitude = null ? document.getElementById("lat").innerText = "null" : document.getElementById("lat").innerText = coords.latitude;
+        coords.longitude = null ? document.getElementById("lon").innerText = "null" : document.getElementById("lon").innerText = coords.longitude;
+        coords.altitude = null ? document.getElementById("alt").innerText = "null" : document.getElementById("alt").innerText = coords.altitude;
+        coords.speed = null ? document.getElementById("vit").innerText = "null" : document.getElementById("vit").innerText = coords.speed;
+        console.log(coords);
     });
 })
