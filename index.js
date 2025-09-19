@@ -16,14 +16,14 @@ const stamenTerrain = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_ter
   attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://stamen.com/">Stamen</a>, &copy; OpenStreetMap'
 });
 
-const map = L.map('map', { center: NICE, zoom: 12, layers: [osm] });
+const map = L.map('map', { center: NICE, zoom: 12, layers: [stamenToner] });
 
 L.control.layers(
-  { "OpenStreetMap": osm, "Stamen Toner": stamenToner, "Stamen Terrain": stamenTerrain }
+  { "Stamen Toner": stamenToner, "Stamen Terrain": stamenTerrain, "OpenStreetMap": osm }
 ).addTo(map);
 
 L.marker(NICE).addTo(map).bindPopup('Nice – centre-ville');
-const lineMN = L.polyline([MARSEILLE, NICE], { color: 'blue' }).addTo(map).bindPopup('Segment Marseille ↔ Nice');
+L.polyline([MARSEILLE, NICE], { color: 'blue' }).addTo(map).bindPopup('Segment Marseille ↔ Nice');
 L.marker(MARSEILLE).addTo(map).bindPopup('Marseille – centre-ville');
 
 const distCtrl = L.control({ position: 'topright' });
