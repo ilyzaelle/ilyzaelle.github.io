@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function(){
         lon = coords.longitude;
         alt = coords.altitude;
         vit = coords.speed;
+        console.log(lat,lon,alt,vit);
     });
     document.getElementById("lat").innerText = lat;
     document.getElementById("lon").innerText = lon;
