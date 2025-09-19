@@ -10,5 +10,5 @@ if (navigator.geolocation){
         lat.textContent = (c.latitude ?? '-');
         alt.textContent = (c.altitude ?? '-');
         speed.textContent = (c.speed ?? '-');
-    }, function(err){}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    }, function(err){}, { timeout: 10000, maximumAge: 0 });
 }
