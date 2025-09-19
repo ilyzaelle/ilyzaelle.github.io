@@ -5,7 +5,7 @@ const speed = document.getElementById("speed");
 
 if (navigator.geolocation){
     navigator.geolocation.watchPosition(function(pos){
-        const c = position.coords;
+        const c = pos.coords;
         lon.textContent = (c.longitude ?? '-');
         lat.textContent = (c.latitude ?? '-');
         alt.textContent = (c.altitude ?? '-');
