@@ -6,20 +6,14 @@ const speed = document.getElementById("speed");
 const time = document.getElementById("time");
 const logEl = document.getElementById("log");
 
-if (!navigator.geolocation){
-    logEl.textContent += "\nGeolocation non supportée";
-    return;
-}else{
+if (navigator.geolocation){
     navigator.geolocation.watchPosition(function(pos){
-    const c = position.coords;
-    lon.textContent = (c.longitude ?? '-');
-    lat.textContent = (c.latitude ?? '-');
-    alt.textContent = (c.altitude == null ? '-' : c.altitude);
-    acc.textContent = (c.accuracy ?? '-');
-    if (c.speed == null) {
-        speed.textContent = '-';
-    }
-    time.textContent = new Date(position.timestamp).toLocaleString();
-    }, function(err){}, 
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        const c = position.coords;
+        lon.textContent = (c.longitude ?? '-');
+        lat.textContent = (c.latitude ?? '-');
+        alt.textContent = (c.altitude == null ? '-' : c.altitude);
+        acc.textContent = (c.accuracy ?? '-');
+        speed.textContent = (c.speed ?? '-');
+        time.textContent = new Date(position.timestamp).toLocaleString();
+    }, function(err){}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 }
