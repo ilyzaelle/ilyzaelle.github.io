@@ -62,3 +62,23 @@ renderer.setAnimationLoop(() => {
     cube.rotation.y += 0.01;
     renderer.render(scene, camera);
 });
+
+
+const texLoader = new THREE.TextureLoader();
+
+const colorTex = await texLoader.loadAsync('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
+
+colorTex.colorSpace = THREE.SRGBColorSpace;           // couleurs correctes
+colorTex.wrapS = colorTex.wrapT = THREE.RepeatWrapping;
+colorTex.repeat.set(1, 1);
+colorTex.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy()
+);
+
+
+cube.material = new THREE.MeshStandardMaterial({
+    map: colorTex,
+    metalness: 0.2,
+    roughness: 0.7,
+});
