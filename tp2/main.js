@@ -1,84 +1,132 @@
 import * as THREE from 'three';
-import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const light = new THREE.AmbientLight(0xffffff, 1);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+let renderer, scene, camera, controls;
+let model;                 // le modèle glTF chargé
+let useDeviceOrientation = false;
+const eulerTarget = new THREE.Euler(); // orientation cible via capteurs
+const rad = THREE.MathUtils.degToRad;
 
-camera.position.z = 5;
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+init();
+animate();
 
-document.body.appendChild(renderer.domElement);
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.2, roughness: 0.6 });
-const cube = new THREE.Mesh(geometry, material);
+async function init() {
+    // RENDERER
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.appendChild(renderer.domElement);
 
-scene.add(cube);
-light.position.set(3, 5, 2);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+    // SCENE + CAMERA
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1020);
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(2.5, 1.6, 3.0);
 
-class MinMaxGUIHelper {
-    constructor(obj, minProp, maxProp, minDif) {
-        this.obj = obj;
-        this.minProp = minProp;
-        this.maxProp = maxProp;
-        this.minDif = minDif;
+    // CONTROLS (souris/touch)
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // LUMIÈRES
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const dir = new THREE.DirectionalLight(0xffffff, 1);
+    dir.position.set(3, 5, 2);
+    scene.add(dir);
+
+    // SOL
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshStandardMaterial({ color: 0x202733, roughness: 1 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // CHARGER UN MODÈLE 3D (GLTF/GLB)
+    // Exemples légers : Duck.glb / DamagedHelmet.glb
+    const loader = new GLTFLoader();
+    try {
+        const gltf = await loader.loadAsync(
+            'https://threejs.org/examples/models/gltf/Duck/glTF-Binary/Duck.glb'
+        );
+        model = gltf.scene;
+        model.position.set(0, 0, 0);
+        model.traverse(o => { if (o.isMesh) o.castShadow = true; });
+        scene.add(model);
+    } catch (err) {
+        console.error('Erreur de chargement GLTF:', err);
+
+        const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(1,1,1),
+            new THREE.MeshStandardMaterial({ color: 0x44aa88, roughness: .6, metalness: .1 })
+        );
+        model = mesh;
+        scene.add(model);
     }
-    get min() { return this.obj[this.minProp]; }
-    set min(v) {
-        this.obj[this.minProp] = Math.max(0.0001, v); // clamp near > 0
-        this.obj[this.maxProp] = Math.max(this.obj[this.maxProp], this.obj[this.minProp] + this.minDif);
-    }
-    get max() { return this.obj[this.maxProp]; }
-    set max(v) {
-        this.obj[this.maxProp] = v;
-        this.min = this.min; // enforce min <= max - minDif
+
+    window.addEventListener('resize', onResize);
+
+    const btn = document.getElementById('enableSensors');
+    btn.addEventListener('click', async () => {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            try {
+                const response = await DeviceOrientationEvent.requestPermission();
+                if (response !== 'granted') return alert('Permission refusée.');
+            } catch {
+                return alert('Permission capteurs non accordée.');
+            }
+        }
+        startDeviceEvents();
+        btn.style.display = 'none';
+    });
+
+    if (!('DeviceOrientationEvent' in window)) {
+        document.getElementById('enableSensors').style.display = 'none';
     }
 }
 
-function updateCamera() {
-    camera.updateProjectionMatrix();
-}
-
-function onWindowResize() {
+function onResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
-    updateCamera();
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
-window.addEventListener('resize', onWindowResize);
 
-const gui = new GUI();
-gui.add(camera, 'fov', 1, 120, 1).onChange(updateCamera);
-const minMaxGUIHelper = new MinMaxGUIHelper(camera, 'near', 'far', 0.1);
-gui.add(minMaxGUIHelper, 'min', 0.01, 50, 0.01).name('near').onChange(updateCamera);
-gui.add(minMaxGUIHelper, 'max', 0.1, 2000, 0.1).name('far').onChange(updateCamera);
+function startDeviceEvents() {
+    useDeviceOrientation = true;
 
-renderer.setAnimationLoop(() => {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    renderer.render(scene, camera);
-});
+    window.addEventListener('deviceorientation', (ev) => {
+        const { alpha, beta, gamma } = ev;
+        if (alpha == null || beta == null || gamma == null) return;
+        // Mapping simple vers l'Euler du modèle
+        eulerTarget.set(rad(beta), rad(alpha), rad(-gamma), 'XYZ');
+    }, true);
 
+    window.addEventListener('devicemotion', (ev) => {
+        if (!model || !ev.accelerationIncludingGravity) return;
+        const a = ev.accelerationIncludingGravity;
+        const mag = Math.min(1.0, Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) / 20);
+        model.position.y = mag * 0.2; // petite translation selon l’activité
+    }, true);
+}
 
-const texLoader = new THREE.TextureLoader();
-
-const colorTex = await texLoader.loadAsync('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
-
-colorTex.colorSpace = THREE.SRGBColorSpace;           // couleurs correctes
-colorTex.wrapS = colorTex.wrapT = THREE.RepeatWrapping;
-colorTex.repeat.set(1, 1);
-colorTex.anisotropy = Math.min(
-    8,
-    renderer.capabilities.getMaxAnisotropy()
-);
-
-
-cube.material = new THREE.MeshStandardMaterial({
-    map: colorTex,
-    metalness: 0.2,
-    roughness: 0.7,
-});
+function animate() {
+    renderer.setAnimationLoop(() => {
+        if (model) {
+            if (useDeviceOrientation) {
+                // interpolation douce vers l'orientation issue des capteurs
+                model.rotation.x += (eulerTarget.x - model.rotation.x) * 0.15;
+                model.rotation.y += (eulerTarget.y - model.rotation.y) * 0.15;
+                model.rotation.z += (eulerTarget.z - model.rotation.z) * 0.15;
+            } else {
+                // fallback: rotation automatique si capteurs non actifs
+                model.rotation.y += 0.01;
+            }
+        }
+        controls.update();
+        renderer.render(scene, camera);
+    });
+}
